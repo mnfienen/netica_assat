@@ -144,8 +144,9 @@ class mod_res:
         self.maxWT = []
         self.meanrch = []
         self.maxWTloc = []
+        self.maxWTcol = []
         ofp = open('SEAWAT2NETICA.dat','w')
-        ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12\n' %('model_row',
+        ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12s\n' %('model_row',
                                                       'width',
                                                       'mean_elev',
                                                       'maxWT',
@@ -162,22 +163,26 @@ class mod_res:
                 self.maxWT.append(-999)
                 self.meanrch.append(-999)
                 self.maxWTloc.append(-999)
+                self.maxWTcol.append(-999)
+                
             else:
                 self.island_width.append((self.eastend[i] - self.westend[i] + 1)*50.0)
                 self.meanelev.append(np.mean(self.modtop[i,self.westend[i]+1:self.eastend[i]]))
                 tmpWT = self.heads[i,self.westend[i]+1:self.eastend[i]]
                 self.maxWT.append(np.max(tmpWT))
-                self.meanrch.append(np.mean(self.heads[i,self.westend[i]+1:self.eastend[i]]))
+                self.meanrch.append(np.mean(self.rch[i,self.westend[i]+1:self.eastend[i]]))
                 maxWTind = np.nonzero(tmpWT==np.max(tmpWT))[0]
                 self.maxWTloc.append((len(tmpWT)-maxWTind+1)*50)
-                ofp.write('%10d %16.4f %16.4f %16.4f %16.4f %16.4f %12d %12d\n' %(i,
+                self.maxWTcol.append(self.eastend[i] + 1 -  (len(tmpWT)-maxWTind + 2))
+                ofp.write('%10d %16.4f %16.4f %16.4f %16.8f %16.4f %12d %12d %12d\n' %(i,
                                                                         self.island_width[i],
                                                                         self.meanelev[i],
                                                                         self.maxWT[i],
                                                                         self.meanrch[i],
                                                                         self.maxWTloc[i],
                                                                         self.westend[i],
-                                                                        self.eastend[i])) 
+                                                                        self.eastend[i],
+                                                                        self.maxWTcol[i])) 
         ofp.close()
         
             
