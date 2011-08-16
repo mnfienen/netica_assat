@@ -149,8 +149,8 @@ class mod_res:
         self.maxDTW = []
         ofp = open('SEAWAT2NETICA.dat','w')
         ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12s %16s %16s\n' %('model_row',
-                                                      'width',
-                                                      'mean_elev',
+                                                      'islandwidth',
+                                                      'islandelev',
                                                       'maxWT',
                                                       'mean_rch',
                                                       'max_WT_loc',
