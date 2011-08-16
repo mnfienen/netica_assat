@@ -145,8 +145,10 @@ class mod_res:
         self.meanrch = []
         self.maxWTloc = []
         self.maxWTcol = []
+        self.meanDTW = []
+        self.maxDTW = []
         ofp = open('SEAWAT2NETICA.dat','w')
-        ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12s\n' %('model_row',
+        ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12s %16s %16s\n' %('model_row',
                                                       'width',
                                                       'mean_elev',
                                                       'maxWT',
@@ -154,7 +156,9 @@ class mod_res:
                                                       'max_WT_loc',
                                                       'west_index',
                                                       'east_index',
-                                                      'max_WT_col')) 
+                                                      'max_WT_col',
+                                                      'mean_DTW',
+                                                      'max_DTW')) 
            
         for i in np.arange(strow-1,endrow):
             if self.westend[i] < 0:
@@ -164,7 +168,8 @@ class mod_res:
                 self.meanrch.append(-999)
                 self.maxWTloc.append(-999)
                 self.maxWTcol.append(-999)
-                
+                self.meanDTW.append(np.mean(-999))
+                self.maxDTW.append(np.max(-999))
             else:
                 self.island_width.append((self.eastend[i] - self.westend[i] + 1)*50.0)
                 self.meanelev.append(np.mean(self.modtop[i,self.westend[i]+1:self.eastend[i]]))
@@ -174,7 +179,11 @@ class mod_res:
                 maxWTind = np.nonzero(tmpWT==np.max(tmpWT))[0]
                 self.maxWTloc.append((len(tmpWT)-maxWTind+1)*50)
                 self.maxWTcol.append(self.eastend[i] + 1 -  (len(tmpWT)-maxWTind + 2))
-                ofp.write('%10d %16.4f %16.4f %16.4f %16.8f %16.4f %12d %12d %12d\n' %(i,
+                DTW = self.modtop[i,self.westend[i]+1:self.eastend[i]] - self.heads[i,self.westend[i]+1:self.eastend[i]] 
+                self.meanDTW.append(np.mean(DTW))
+                self.maxDTW.append(np.max(DTW))
+                
+                ofp.write('%10d %16.4f %16.4f %16.4f %16.8f %16.4f %12d %12d %12d %16.4f %16.4f\n' %(i,
                                                                         self.island_width[i],
                                                                         self.meanelev[i],
                                                                         self.maxWT[i],
@@ -182,7 +191,9 @@ class mod_res:
                                                                         self.maxWTloc[i],
                                                                         self.westend[i],
                                                                         self.eastend[i],
-                                                                        self.maxWTcol[i])) 
+                                                                        self.maxWTcol[i],
+                                                                        self.meanDTW[i],
+                                                                        self.maxDTW[i])) 
         ofp.close()
         
             
