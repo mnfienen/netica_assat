@@ -1,4 +1,4 @@
- model_row            width        mean_elev            maxWT         mean_rch       max_WT_loc   west_index   east_index   max_WT_col         mean_DTW          max_DTW
+ model_row      islandwidth       islandelev            maxWT         mean_rch       max_WT_loc   west_index   east_index   max_WT_col         mean_DTW          max_DTW
         13        3000.0000           2.1947           1.9633       0.00109086        2950.0000           86          145           86           0.6198           2.2261
         14         300.0000           0.2000           0.2812       0.00125250         100.0000          159          164          162          -0.0468          -0.0241
         15         350.0000           0.9083           0.3383       0.00133600         100.0000          158          164          162           0.6071           2.1182

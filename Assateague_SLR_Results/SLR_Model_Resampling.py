@@ -5,25 +5,26 @@ from headfile import HeadFile
 
 
 class mod_res:
-    def __init__(self, inroot,ISLAND_MID_WIDTH,ISLAND_DISRUPTOR,SCENARIOS,CommonDir = ''):
+    def __init__(self, inroot,ISLAND_MID_WIDTH,ISLAND_DISRUPTOR,CommonDir = '', strow=1, endrow=1240):
         self.inroot = inroot
         self.ISLAND_MIN_WIDTH = ISLAND_MID_WIDTH
         self.ISLAND_DISRUPTOR = ISLAND_DISRUPTOR
-        self.SCENARIOS = SCENARIOS
         self.CommonDir = CommonDir
+        self.strow = strow
+        self.endrow = endrow
         
-    def plotfield(self,arr2plot,filename):
+    def plotfield(self,cscen,arr2plot,filename):
         fig = plt.figure()
         plt.imshow(arr2plot,interpolation = 'nearest')
         plt.colorbar()
-        plt.savefig(filename + '.pdf')
+        plt.savefig(filename + '_' + cscen + '.pdf')
         
     def read_dis(self):
         #read the number or rows, number of columns, and top of model
         DX = []
         DY = []
     
-        indat = open(self.inroot + '.dis','r').readlines()
+        indat = open(self.CommonDir + '/' + self.inroot + '.dis','r').readlines()
         
         # remove the comment lines from the top of the file
         contflag = True
@@ -59,23 +60,25 @@ class mod_res:
         self.modtop = self.modtop.reshape(self.NROW,self.NCOL)
 
             
-    def read_IBOUND(self):
-        indat = open('IB1.inf','r').readlines()
+    def read_IBOUND(self,cscen):
+        datdir = 'SLR_' + cscen + '_Results'
+        indat = open(datdir + '/IB1_' + cscen + '.inf','r').readlines()
         IB = []
         for line in indat:
             IB.extend(line.strip().split())
         IB = np.array(IB).astype(float)
         self.ibound = IB.reshape(self.NROW,self.NCOL)
 
-    def read_heads(self):
-        hd = HeadFile(self.inroot + '.hds',platform = "Windows")
+    def read_heads(self,cscen):
+        datdir = 'SLR_' + cscen + '_Results'
+        hd = HeadFile(datdir + '/SLR' + cscen +'.hds', platform = "Windows")
         hd.get_time(hd.totim)        
         self.heads = hd.head[0,:,:]
         self.heads[self.heads==999.]=np.nan
         del hd
         
     def read_recharge(self):
-        indat = open(self.inroot + '.rch','r').readlines()
+        indat = open(self.CommonDir + '/' + self.inroot + '.rch','r').readlines()
         
         i = 0
         for line in indat:
@@ -93,11 +96,11 @@ class mod_res:
         # reshape to model dimensions
         self.rch = self.rch.reshape(self.NROW,self.NCOL)
             
-    def sweep_rows(self,strow,endrow):
+    def sweep_rows(self,cscen):
         # set two indices to be the east and west ends of the island
         self.eastend=[]
         self.westend=[]
-        for i in np.arange(strow-1,endrow):
+        for i in np.arange(self.strow-1,self.endrow):
             # pull the ibound model row cross section
             ibt = self.ibound[i]
             # find all the constant head cells
@@ -127,18 +130,19 @@ class mod_res:
                     self.westend.append(-999)                    
         self.westend = np.array(self.westend).astype(int)
         self.eastend = np.array(self.eastend).astype(int)
-        ofp = open('testout.dat','w')
+        ofp = open('testout_' + cscen + '.dat','w')
         for i, cw in enumerate(self.westend):
             ofp.write('%10d %10d\n' %(cw,self.eastend[i]))
-        ofp.close()    
-    def plotall(self):
-        self.plotfield(self.heads,'HEADS')
-        self.plotfield(self.ibound,'IBOUND')        
-        self.plotfield(self.modtop,'modtop')
-        self.plotfield(self.rch,'RECHARGE')
+        ofp.close()  
+        
+    def plotall(self,cscen):
+        self.plotfield(cscen,self.heads,'HEADS')
+        self.plotfield(cscen,self.ibound,'IBOUND')        
+        self.plotfield(cscen,self.modtop,'modtop')
+        self.plotfield(cscen,self.rch,'RECHARGE')
     
         
-    def make_calcs(self,strow,endrow):
+    def make_calcs(self,cscen):
         self.island_width = []
         self.meanelev = []
         self.maxWT = []
@@ -147,7 +151,7 @@ class mod_res:
         self.maxWTcol = []
         self.meanDTW = []
         self.maxDTW = []
-        ofp = open('SEAWAT2NETICA.dat','w')
+        ofp = open('SEAWAT2NETICA_SLR_' + cscen + '.cas','w')
         ofp.write('%10s %16s %16s %16s %16s %16s %12s %12s %12s %16s %16s\n' %('model_row',
                                                       'islandwidth',
                                                       'islandelev',
@@ -160,7 +164,7 @@ class mod_res:
                                                       'mean_DTW',
                                                       'max_DTW')) 
            
-        for i in np.arange(strow-1,endrow):
+        for i in np.arange(self.strow-1,self.endrow):
             if self.westend[i] < 0:
                 self.island_width.append(-999)
                 self.meanelev.append(-999)
@@ -174,7 +178,7 @@ class mod_res:
                 self.island_width.append((self.eastend[i] - self.westend[i] + 1)*50.0)
                 self.meanelev.append(np.mean(self.modtop[i,self.westend[i]+1:self.eastend[i]]))
                 tmpWT = self.heads[i,self.westend[i]+1:self.eastend[i]]
-                self.maxWT.append(np.max(tmpWT))
+                self.maxWT.append(np.max(tmpWT)-(0.1*int(cscen)))
                 self.meanrch.append(np.mean(self.rch[i,self.westend[i]+1:self.eastend[i]]))
                 maxWTind = np.nonzero(tmpWT==np.max(tmpWT))[0]
                 self.maxWTloc.append((len(tmpWT)-maxWTind+1)*50)
@@ -182,18 +186,18 @@ class mod_res:
                 DTW = self.modtop[i,self.westend[i]+1:self.eastend[i]] - self.heads[i,self.westend[i]+1:self.eastend[i]] 
                 self.meanDTW.append(np.mean(DTW))
                 self.maxDTW.append(np.max(DTW))
-                
-                ofp.write('%10d %16.4f %16.4f %16.4f %16.8f %16.4f %12d %12d %12d %16.4f %16.4f\n' %(i,
-                                                                        self.island_width[i],
-                                                                        self.meanelev[i],
-                                                                        self.maxWT[i],
-                                                                        self.meanrch[i],
-                                                                        self.maxWTloc[i],
-                                                                        self.westend[i],
-                                                                        self.eastend[i],
-                                                                        self.maxWTcol[i],
-                                                                        self.meanDTW[i],
-                                                                        self.maxDTW[i])) 
+                if self.island_width[i] <= 2000:
+                    ofp.write('%10d %16.4f %16.4f %16.4f %16.8f %16.4f %12d %12d %12d %16.4f %16.4f\n' %(i,
+                                                                            self.island_width[i],
+                                                                            self.meanelev[i],
+                                                                            self.maxWT[i],
+                                                                            self.meanrch[i],
+                                                                            self.maxWTloc[i],
+                                                                            self.westend[i],
+                                                                            self.eastend[i],
+                                                                            self.maxWTcol[i],
+                                                                            self.meanDTW[i],
+                                                                            self.maxDTW[i])) 
         ofp.close()
         
             
@@ -207,34 +211,37 @@ class mod_res:
 ##############################################
 #################  M A I N  ################## 
 ##############################################
-plotflag = False
+plotflag = True
 
 # initialize --> 
 ISLAND_MIN_WIDTH=2 # ### --> minimum number of contiguous island cells to make an island
 ISLAND_DISRUPTOR=3 # ## --> number of cells in a gap that defines island 
 
 SCENARIOS = ['00','02','04','06']
+strow = 1
+endrow = 1240
 CommonDir = 'Common_files' # location of the .dis and .rch files (they are unchanging for now)
 
-mod1 = mod_res('gv12',ISLAND_MIN_WIDTH,ISLAND_DISRUPTOR,SCENARIOS,CommonDir)
+mod1 = mod_res('gv12',ISLAND_MIN_WIDTH,ISLAND_DISRUPTOR,CommonDir,strow,endrow)
+
+# ## Start with the General data in the CommonDir location
 # read the top elevation and dimensionality
 mod1.read_dis()
 # read in the recharge
 mod1.read_recharge()
 
-# read in IBOUND
-mod1.read_IBOUND()
-# read in the heads file
-mod1.read_heads()
-# sweep through the rows
-strow = 1
-endrow = 1240
-mod1.sweep_rows(strow,endrow)
+# ## Now iterate over the specific scenarios
+for cscen in SCENARIOS:
+    # read in IBOUND
+    mod1.read_IBOUND(cscen)
+    # read in the heads file
+    mod1.read_heads(cscen)
+    # sweep through the rows
+    mod1.sweep_rows(cscen)    
+    # finally report the calculations
+    mod1.make_calcs(cscen)
 
-# finally report the calculations
-mod1.make_calcs(strow,endrow)
-
-if plotflag:
-    # nan the noflows --> but only for plotting
-    mod1.noflow2nan()
-    mod1.plotall()
+    if plotflag:
+        # nan the noflows --> but only for plotting
+        mod1.noflow2nan()
+        mod1.plotall(cscen)
